@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Water Level Monitoring{% endblock %}
+
+{% block content %}
+<style>
+    .dashboard-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .card-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+        color: white;
+        padding: 15px 20px;
+        font-weight: 600;
+        font-size: 18px;
+    }
+
+    .card-body {
+        padding: 25px 20px;
+        text-align: center;
+        min-height: 150px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .card-icon {
+        font-size: 48px;
+        margin-bottom: 15px;
+        color: #2196F3;
+    }
+
+    .card-value {
+        font-size: 36px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .card-label {
+        color: #666;
+        font-size: 14px;
+    }
+
+    .machines-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 30px;
+    }
+
+    .machine-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        padding: 20px;
+        border-left: 5px solid #2196F3;
+    }
+
+    .machine-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .machine-id {
+        font-weight: bold;
+        font-size: 18px;
+        color: #1976D2;
+    }
+
+    .machine-name {
+        font-size: 16px;
+        color: #333;
+        margin: 5px 0;
+    }
+
+    .machine-location {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 15px;
+    }
+
+    .machine-stats {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .water-level {
+        font-size: 20px;
+        font-weight: bold;
+        color: #2196F3;
+    }
+
+    .status {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .status-normal {
+        background-color: #e8f5e8;
+        color: #2e7d32;
+    }
+
+    .status-warning {
+        background-color: #fff3e0;
+        color: #f57c00;
+    }
+
+    .status-critical {
+        background-color: #ffebee;
+        color: #c62828;
+    }
+
+    .status-no-data {
+        background-color: #f5f5f5;
+        color: #666;
+    }
+
+    .recent-readings {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        margin-top: 30px;
+        overflow: hidden;
+    }
+
+    .recent-readings-header {
+        background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+        color: white;
+        padding: 15px 20px;
+        font-weight: 600;
+        font-size: 18px;
+    }
+
+    .readings-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .readings-table th,
+    .readings-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+
+    .readings-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .readings-table tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .welcome-message {
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        border-left: 5px solid #2196F3;
+    }
+
+    .welcome-message h2 {
+        color: #1976D2;
+        margin-bottom: 10px;
+    }
+
+    .welcome-message p {
+        color: #666;
+        margin: 0;
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-cards {
+            grid-template-columns: 1fr;
+        }
+        
+        .machines-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .machine-stats {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+    }
+</style>
+
+<div class="welcome-message">
+    <h2>Selamat Datang, {{ session.username }}! 👋</h2>
+    <p>Dashboard ini menampilkan ringkasan status monitoring water level dari semua mesin yang terdaftar.</p>
+</div>
+
+<div class="dashboard-cards">
+    <a href="{{ url_for('monitoring_water') }}" class="card-link">
+        <div class="card">
+            <div class="card-header">
+                Monitoring Water Level
+            </div>
+            <div class="card-body">
+                <i class="fas fa-chart-line card-icon"></i>
+                <div class="card-value">📈</div>
+                <div class="card-label">Lihat Grafik Real-time</div>
+            </div>
+        </div>
+    </a>
+
+    <a href="{{ url_for('export_pdf') }}" class="card-link">
+        <div class="card">
+            <div class="card-header">
+                Laporan
+            </div>
+            <div class="card-body">
+                <i class="fas fa-file-pdf card-icon"></i>
+                <div class="card-value">📊</div>
+                <div class="card-label">Export Data PDF</div>
+            </div>
+        </div>
+    </a>
+
+    <a href="{{ url_for('add_machine') }}" class="card-link">
+        <div class="card">
+            <div class="card-header">
+                Tambah Mesin
+            </div>
+            <div class="card-body">
+                <i class="fas fa-plus-circle card-icon"></i>
+                <div class="card-value">➕</div>
+                <div class="card-label">Tambah Mesin Baru</div>
+            </div>
+        </div>
+    </a>
+</div>
+
+{% if stats.machines %}
+<h3 style="color: #333; margin-bottom: 20px; font-size: 24px;">
+    <i class="fas fa-cogs"></i> Status Mesin
+</h3>
+{% endif %}
+
+{% if stats.latest_readings %}
+<div class="recent-readings">
+    <div class="recent-readings-header">
+        <i class="fas fa-clock"></i> Pembacaan Terbaru
+    </div>
+    <table class="readings-table">
+        <thead>
+            <tr>
+                <th>Nama Mesin</th>
+                <th>Water Level</th>
+                <th>Status</th>
+                <th>Waktu</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reading in stats.latest_readings %}
+            <tr>
+                <td>{{ reading[0] }}</td>
+                <td>{{ "%.1f"|format(reading[1]) }} cm</td>
+                <td>
+                    <span class="status 
+                        {% if reading[2] == 'Normal' %}status-normal
+                        {% elif reading[2] == 'Warning' %}status-warning  
+                        {% elif reading[2] == 'Critical' %}status-critical
+                        {% else %}status-no-data{% endif %}">
+                        {{ reading[2] }}
+                    </span>
+                </td>
+                <td>{{ reading[3].strftime('%d/%m/%Y %H:%M') if reading[3] else '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="recent-readings">
+    <div class="recent-readings-header">
+        <i class="fas fa-info-circle"></i> Informasi
+    </div>
+    <div style="padding: 40px; text-align: center; color: #666;">
+        <i class="fas fa-database" style="font-size: 48px; margin-bottom: 20px; color: #ccc;"></i>
+        <p>Belum ada data pembacaan water level.</p>
+        <p>Silakan tambahkan data melalui API atau hubungkan sensor.</p>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    // Auto refresh dashboard every 30 seconds
+    setTimeout(function() {
+        location.reload();
+    }, 30000);
+</script>
+
+{% endblock %}

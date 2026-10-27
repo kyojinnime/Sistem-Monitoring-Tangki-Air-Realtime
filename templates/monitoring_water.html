@@ -1,0 +1,591 @@
+{% extends "base.html" %}
+
+{% block title %}Monitoring Water Level{% endblock %}
+
+{% block content %}
+<style>
+    .monitoring-container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+
+    .monitoring-title {
+        font-size: 28px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 30px;
+        text-align: left;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 30px;
+        align-items: end;
+    }
+
+    .form-group {
+        flex: 1;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: bold;
+        font-size: 14px;
+        color: #333;
+        margin-bottom: 8px;
+    }
+
+    .form-select, .form-input {
+        width: 100%;
+        padding: 10px 15px;
+        border: 2px solid #ddd;
+        border-radius: 5px;
+        font-size: 14px;
+        background-color: white;
+        transition: border-color 0.3s;
+    }
+
+    .form-select:focus, .form-input:focus {
+        outline: none;
+        border-color: #2196F3;
+    }
+
+    .btn-monitor {
+        background-color: #2196F3;
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+        height: fit-content;
+    }
+
+    .btn-monitor:hover {
+        background-color: #1976D2;
+    }
+
+    .chart-container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+        height: 400px;
+        position: relative;
+    }
+
+    .info-cards {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .info-card {
+        flex: 1;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+
+    .info-card h3 {
+        font-size: 16px;
+        color: #666;
+        margin-bottom: 10px;
+        font-weight: normal;
+    }
+
+    .info-card .value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2196F3;
+    }
+
+    .data-table-container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .table-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .table-controls select {
+        padding: 5px 10px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+    }
+
+    .search-input {
+        padding: 8px 15px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        width: 200px;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+
+    .data-table th {
+        background-color: #2196F3;
+        color: white;
+        padding: 12px;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .data-table td {
+        padding: 12px;
+        text-align: center;
+        border-bottom: 1px solid #eee;
+    }
+
+    .data-table tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .pagination button {
+        background-color: #2196F3;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 3px;
+        cursor: pointer;
+        margin: 0 2px;
+    }
+
+    .pagination button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+
+    .pagination .current-page {
+        background-color: #1976D2;
+    }
+
+    .status-normal { color: #4CAF50; font-weight: bold; }
+    .status-warning { color: #FF9800; font-weight: bold; }
+    .status-danger { color: #F44336; font-weight: bold; }
+
+    .no-data {
+        text-align: center;
+        color: #999;
+        font-style: italic;
+        padding: 40px;
+    }
+
+    .loading {
+        text-align: center;
+        color: #2196F3;
+        font-weight: bold;
+        padding: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .form-row {
+            flex-direction: column;
+        }
+        
+        .info-cards {
+            flex-direction: column;
+        }
+        
+        .table-controls {
+            flex-direction: column;
+            gap: 10px;
+            align-items: stretch;
+        }
+        
+        .search-input {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="monitoring-container">
+    <h2 class="monitoring-title">Monitoring Water</h2>
+    
+    <div class="form-row">
+        <div class="form-group">
+            <label class="form-label">ID Mesin</label>
+            <select id="machineSelect" class="form-select">
+                <option value="">Pilih Mesin...</option>
+                {% for machine in machines %}
+                <option value="{{ machine[0] }}">{{ machine[0] }} - {{ machine[1] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Nama Mesin</label>
+            <input type="text" id="machineName" class="form-input" placeholder="Nama akan otomatis terisi" readonly>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Lokasi</label>
+            <input type="text" id="machineLocation" class="form-input" placeholder="Lokasi akan otomatis terisi" readonly>
+        </div>
+        
+        <button id="startMonitoring" class="btn-monitor">Mulai Monitoring</button>
+    </div>
+</div>
+
+<div class="info-cards" id="infoCards" style="display: none;">
+    <div class="info-card">
+        <h3>Ketinggian</h3>
+        <div class="value" id="currentLevel">-</div>
+    </div>
+    <div class="info-card">
+        <h3>Status</h3>
+        <div class="value" id="currentStatus">-</div>
+    </div>
+    <div class="info-card">
+        <h3>Jam</h3>
+        <div class="value" id="currentTime">-</div>
+    </div>
+</div>
+
+<div class="chart-container" id="chartContainer" style="display: none;">
+    <canvas id="waterLevelChart"></canvas>
+</div>
+
+<div class="data-table-container" id="tableContainer" style="display: none;">
+    <div class="table-controls">
+        <div>
+            <label>Show 
+                <select id="entriesPerPage">
+                    <option value="10">10</option>
+                    <option value="15">15</option>
+                    <option value="20">20</option>
+                </select>
+                entries
+            </label>
+        </div>
+        <div>
+            <label>Search: 
+                <input type="text" id="searchInput" class="search-input" placeholder="Cari data...">
+            </label>
+        </div>
+    </div>
+    
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>NO</th>
+                <th>Ketinggian</th>
+                <th>Status</th>
+                <th>Jam</th>
+            </tr>
+        </thead>
+        <tbody id="dataTableBody">
+        </tbody>
+    </table>
+    
+    <div class="pagination">
+        <div id="tableInfo"></div>
+        <div>
+            <button id="prevPage" disabled>Previous</button>
+            <button id="currentPageBtn" class="current-page">1</button>
+            <button id="nextPage" disabled>Next</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+let currentMachineId = null;
+let monitoringInterval = null;
+let chart = null;
+let allData = [];
+let currentPage = 1;
+let entriesPerPage = 10;
+let filteredData = [];
+
+// Machine data for auto-fill
+const machineData = {
+    {% for machine in machines %}
+    '{{ machine[0] }}': {
+        name: '{{ machine[1] }}',
+        location: '{{ machine[2] }}'
+    },
+    {% endfor %}
+};
+
+document.getElementById('machineSelect').addEventListener('change', function() {
+    const selectedMachine = this.value;
+    const nameInput = document.getElementById('machineName');
+    const locationInput = document.getElementById('machineLocation');
+    
+    if (selectedMachine && machineData[selectedMachine]) {
+        nameInput.value = machineData[selectedMachine].name;
+        locationInput.value = machineData[selectedMachine].location;
+    } else {
+        nameInput.value = '';
+        locationInput.value = '';
+    }
+});
+
+document.getElementById('startMonitoring').addEventListener('click', function() {
+    const machineId = document.getElementById('machineSelect').value;
+    
+    if (!machineId) {
+        alert('Pilih mesin terlebih dahulu!');
+        return;
+    }
+    
+    currentMachineId = machineId;
+    startMonitoring();
+});
+
+function startMonitoring() {
+    // Show monitoring components
+    document.getElementById('infoCards').style.display = 'flex';
+    document.getElementById('chartContainer').style.display = 'block';
+    document.getElementById('tableContainer').style.display = 'block';
+    
+    // Initialize chart
+    initChart();
+    
+    // Load initial data
+    loadWaterData();
+    
+    // Start auto refresh every 5 seconds
+    if (monitoringInterval) {
+        clearInterval(monitoringInterval);
+    }
+    
+    monitoringInterval = setInterval(loadWaterData, 5000);
+}
+
+function initChart() {
+    const ctx = document.getElementById('waterLevelChart').getContext('2d');
+    
+    if (chart) {
+        chart.destroy();
+    }
+    
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Water Level (cm)',
+                data: [],
+                borderColor: '#2196F3',
+                backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Water Level (cm)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Time'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                title: {
+                    display: true,
+                    text: 'Real-time Water Level Monitoring'
+                }
+            }
+        }
+    });
+}
+
+async function loadWaterData() {
+    if (!currentMachineId) return;
+    
+    try {
+        const response = await fetch(`/get_water_data/${currentMachineId}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error('Error loading data:', data.error);
+            return;
+        }
+        
+        // Limit data to last 20 entries for chart and table
+        const maxDataPoints = 20;
+        let limitedLabels = data.labels || [];
+        let limitedData = data.data || [];
+        let limitedStatus = data.status || [];
+        
+        if (limitedLabels.length > maxDataPoints) {
+            limitedLabels = limitedLabels.slice(-maxDataPoints);
+            limitedData = limitedData.slice(-maxDataPoints);
+            limitedStatus = limitedStatus.slice(-maxDataPoints);
+        }
+        
+        // Update chart with limited data
+        if (chart && limitedLabels && limitedData) {
+            chart.data.labels = limitedLabels;
+            chart.data.datasets[0].data = limitedData;
+            chart.update('none'); // Update without animation for real-time feel
+        }
+        
+        // Update info cards with latest data
+        if (limitedData && limitedData.length > 0) {
+            const latestIndex = limitedData.length - 1;
+            document.getElementById('currentLevel').textContent = limitedData[latestIndex].toFixed(2) + ' cm';
+            
+            const status = limitedStatus[latestIndex];
+            const statusElement = document.getElementById('currentStatus');
+            statusElement.textContent = status;
+            statusElement.className = 'value ' + getStatusClass(status);
+            
+            document.getElementById('currentTime').textContent = limitedLabels[latestIndex];
+        }
+        
+        // Prepare table data with limited entries
+        allData = [];
+        for (let i = 0; i < limitedData.length; i++) {
+            allData.push({
+                level: limitedData[i],
+                status: limitedStatus[i],
+                time: limitedLabels[i]
+            });
+        }
+        
+        // Reverse to show latest first
+        allData.reverse();
+        updateTable();
+        
+    } catch (error) {
+        console.error('Error fetching water data:', error);
+    }
+}
+
+function getStatusClass(status) {
+    switch(status.toLowerCase()) {
+        case 'normal': return 'status-normal';
+        case 'warning': return 'status-warning';
+        case 'danger': return 'status-danger';
+        default: return '';
+    }
+}
+
+function updateTable() {
+    // Apply search filter
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    filteredData = allData.filter(item => 
+        item.status.toLowerCase().includes(searchTerm) ||
+        item.level.toString().includes(searchTerm) ||
+        item.time.toLowerCase().includes(searchTerm)
+    );
+    
+    // Calculate pagination
+    const totalEntries = filteredData.length;
+    const totalPages = Math.ceil(totalEntries / entriesPerPage);
+    currentPage = Math.min(currentPage, totalPages || 1);
+    
+    const startIndex = (currentPage - 1) * entriesPerPage;
+    const endIndex = Math.min(startIndex + entriesPerPage, totalEntries);
+    const currentData = filteredData.slice(startIndex, endIndex);
+    
+    // Update table body
+    const tableBody = document.getElementById('dataTableBody');
+    tableBody.innerHTML = '';
+    
+    if (currentData.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4" class="no-data">Tidak ada data ditemukan</td></tr>';
+    } else {
+        currentData.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${startIndex + index + 1}</td>
+                <td>${item.level.toFixed(2)} cm</td>
+                <td><span class="${getStatusClass(item.status)}">${item.status}</span></td>
+                <td>${item.time}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+    
+    // Update pagination info
+    document.getElementById('tableInfo').textContent = 
+        `Showing ${startIndex + 1} to ${endIndex} of ${totalEntries} entries`;
+    
+    // Update pagination buttons
+    document.getElementById('prevPage').disabled = currentPage <= 1;
+    document.getElementById('nextPage').disabled = currentPage >= totalPages;
+    document.getElementById('currentPageBtn').textContent = currentPage;
+}
+
+// Event listeners for table controls
+document.getElementById('entriesPerPage').addEventListener('change', function() {
+    entriesPerPage = parseInt(this.value);
+    currentPage = 1;
+    updateTable();
+});
+
+document.getElementById('searchInput').addEventListener('input', function() {
+    currentPage = 1;
+    updateTable();
+});
+
+document.getElementById('prevPage').addEventListener('click', function() {
+    if (currentPage > 1) {
+        currentPage--;
+        updateTable();
+    }
+});
+
+document.getElementById('nextPage').addEventListener('click', function() {
+    const totalPages = Math.ceil(filteredData.length / entriesPerPage);
+    if (currentPage < totalPages) {
+        currentPage++;
+        updateTable();
+    }
+});
+
+// Stop monitoring when page is unloaded
+window.addEventListener('beforeunload', function() {
+    if (monitoringInterval) {
+        clearInterval(monitoringInterval);
+    }
+});
+
+// Initialize table on page load
+updateTable();
+</script>
+{% endblock %}
